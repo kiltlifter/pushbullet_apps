@@ -41,7 +41,7 @@ def hacker_news():
 
 
 def steep_and_cheap():
-    s = SteepAndCheap(config['Steep and Cheap']['keywords'])
+    s = SteepAndCheap(config['Steep and Cheap']['keywords'], config['Steep and Cheap']['exclusions'])
     r = s.execute()
     if r and args.print:
         [print(a) for a in r]

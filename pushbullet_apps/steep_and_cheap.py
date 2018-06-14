@@ -4,7 +4,6 @@ Module Docstring
 """
 
 from .session import DefaultSession
-import json
 import re
 from datetime import timedelta
 from dateutil.parser import parse
@@ -16,10 +15,11 @@ __license__ = "MIT"
 
 
 class SteepAndCheap(DefaultSession):
-    def __init__(self, keywords: list):
+    def __init__(self, keywords: list, exclusions: list):
         super(SteepAndCheap, self).__init__()
         self.base_url = 'https://www.steepandcheap.com'
         self.keywords = keywords
+        self.exclusions = exclusions
 
     def get_deal(self):
         r = self.get(self.base_url + '/data/odat.json')
@@ -38,7 +38,8 @@ class SteepAndCheap(DefaultSession):
         matches = []
         for phrase in self.keywords:
             p = re.compile(phrase, re.IGNORECASE)
-            if p.search(content.get('productTitle')):
+            t = content.get('productTitle')
+            if t and p.search(t.lower()):
                 matches.append({
                     'title': f'{content["productTitle"]}',
                     'price': f'{content["salePrice"]}',
@@ -46,13 +47,22 @@ class SteepAndCheap(DefaultSession):
                     'upcoming': False
                 })
             for idx, u in enumerate(content.get('upcoming')):
-                if p.search(u.get('productTitle')):
+                t = u.get('productTitle')
+                if t and p.search(t.lower()):
                     matches.append({
                         'title': f'{u["productTitle"]}',
                         'price': f'{u["salePrice"]}',
                         'link': f'{u["url"]}',
                         'upcoming': self.approx_time(content.get('nextUpdateString'), idx)
                     })
+
+        for m in matches:
+            for e in self.exclusions:
+                z = re.search(str(e), m['title'], flags=re.IGNORECASE)
+                if z:
+                    matches.remove(m)
+                break
+
         return matches
 
     def execute(self):
