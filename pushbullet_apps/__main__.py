@@ -48,12 +48,16 @@ def steep_and_cheap():
         exit(0)
     elif r:
         p = Pushbullet(api_key=config['API']['pushbullet']['key'])
+        content = []
         for m in r:
             info = 'Current' if not m['upcoming'] else f'@{m["upcoming"]}'
-            p.send_link(
+            content.append(dict(
                 title=info + ': ' + m['title'] + ' - ' + m['price'],
                 url=m['link']
-            )
+            ))
+        p.send_note(title=f'Steep and Cheap: {datetime.now().strftime("%m/%d %H:%M")}',
+                    body='\n'.join([f'{i["title"]}: https://www.steepandcheap.com{i["url"]}' for i in content]))
+
 
 
 
