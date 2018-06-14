@@ -10,6 +10,7 @@ from datetime import datetime
 from .meh import Meh
 from .hacker_news import HackerNews
 from .pushbullet import Pushbullet
+from .steep_and_cheap import SteepAndCheap
 
 __author__ = "Sean Douglas"
 __version__ = "0.1.0"
@@ -39,6 +40,22 @@ def hacker_news():
                     body='\n'.join(['{}: {}'.format(a[0], a[1]) for a in data]))
 
 
+def steep_and_cheap():
+    s = SteepAndCheap(config['Steep and Cheap']['keywords'])
+    r = s.execute()
+    if r and args.print:
+        [print(a) for a in r]
+        exit(0)
+    elif r:
+        p = Pushbullet(api_key=config['API']['pushbullet']['key'])
+        for m in r:
+            info = 'Current' if not m['upcoming'] else f'@{m["upcoming"]}'
+            p.send_link(
+                title=info + ': ' + m['title'] + ' - ' + m['price'],
+                url=m['link']
+            )
+
+
 
 if __name__ == "__main__":
     with open(CONFIG, 'r') as f:
@@ -47,12 +64,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     subparser = parser.add_subparsers(help='sub-command help.', dest='command')
 
-    encoding_parser = subparser.add_parser('meh', help='Push daily deal from meh')
-    encoding_parser.add_argument('-p', '--print', action='store_true', help='Print to console only')
+    meh_parser = subparser.add_parser('meh', help='Push daily deal from meh')
+    meh_parser.add_argument('-p', '--print', action='store_true', help='Print to console only')
 
-    encoding_parser = subparser.add_parser('hacker_news', help='Current articles from hacker news')
-    encoding_parser.add_argument('-c', '--count', type=int, help='Number of news stories to return')
-    encoding_parser.add_argument('-p', '--print', action='store_true', help='Print to console only')
+    hn_parser = subparser.add_parser('hacker_news', help='Current articles from hacker news')
+    hn_parser.add_argument('-c', '--count', type=int, help='Number of news stories to return')
+    hn_parser.add_argument('-p', '--print', action='store_true', help='Print to console only')
+
+    snc_parser = subparser.add_parser('steep_and_cheap', help='Push current steep and cheap deals matching criteria')
+    snc_parser.add_argument('-p', '--print', action='store_true', help='Print to console only')
 
     args = parser.parse_args()
 
@@ -61,6 +81,9 @@ if __name__ == "__main__":
         exit(0)
     elif args.command == 'hacker_news':
         hacker_news()
+        exit(0)
+    elif args.command == 'steep_and_cheap':
+        steep_and_cheap()
         exit(0)
     else:
         parser.print_help()
